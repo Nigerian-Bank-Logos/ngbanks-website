@@ -1,0 +1,123 @@
+---
+/**
+ * GitHub star counter. Drop it anywhere: `<GithubStars repo="owner/name" />`.
+ * Every instance on a page shares one API request per repo, and the result is
+ * cached in sessionStorage for an hour (the unauthenticated API allows 60 req/hr per IP).
+ * If the request fails, only the icon is shown.
+ */
+import GithubMarkIcon from "./icons/GithubMarkIcon.astro";
+import { GITHUB_REPO } from "../lib/constants";
+
+interface Props {
+  repo?: string;
+  size?: number;
+  class?: string;
+}
+
+const { repo = GITHUB_REPO, size = 24, class: className } = Astro.props;
+---
+
+<a
+  href={`https://github.com/${repo}`}
+  class:list={["gh-stars", className]}
+  target="_blank"
+  rel="noopener noreferrer"
+  data-github-stars={repo}
+  aria-label={`${repo} on GitHub`}
+  data-umami-event="GitHub Stars Clicked"
+>
+  <GithubMarkIcon size={size} />
+  <span class="gh-stars__count" data-stars aria-hidden="true"></span>
+</a>
+
+<script>
+  const TTL = 60 * 60 * 1000;
+
+  function format(n: number): string {
+    if (n < 1000) return String(n);
+    const k = n / 1000;
+    return `${k >= 10 ? Math.round(k) : k.toFixed(1).replace(/\.0$/, "")}k`;
+  }
+
+  async function getStars(repo: string): Promise<number | null> {
+    const key = `gh-stars:${repo}`;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(key) ?? "null");
+      if (cached && Date.now() - cached.t < TTL) return cached.n;
+    } catch {}
+
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}`, {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (!res.ok) return null;
+      const n = (await res.json()).stargazers_count;
+      if (typeof n !== "number") return null;
+      try {
+        sessionStorage.setItem(key, JSON.stringify({ n, t: Date.now() }));
+      } catch {}
+      return n;
+    } catch {
+      return null;
+    }
+  }
+
+  const byRepo = new Map<string, HTMLElement[]>();
+  document
+    .querySelectorAll<HTMLElement>("[data-github-stars]")
+    .forEach((el) => {
+      const repo = el.dataset.githubStars!;
+      byRepo.set(repo, [...(byRepo.get(repo) ?? []), el]);
+    });
+
+  for (const [repo, els] of byRepo) {
+    getStars(repo).then((n) => {
+      if (n === null) return;
+      for (const el of els) {
+        const count = el.querySelector<HTMLElement>("[data-stars]")!;
+        count.textContent = format(n);
+        count.removeAttribute("aria-hidden");
+        el.setAttribute("aria-label", `${n} stars on GitHub`);
+        el.classList.add("gh-stars--loaded");
+      }
+    });
+  }
+</script>
+
+<style>
+  .gh-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-primary, #030712);
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 18px;
+    letter-spacing: -0.02em;
+    transition: opacity 150ms ease;
+  }
+
+  .gh-stars:hover {
+    opacity: 0.7;
+  }
+
+  .gh-stars:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .gh-stars__count:empty {
+    display: none;
+  }
+
+  .gh-stars--loaded .gh-stars__count {
+    animation: gh-stars-in 200ms ease;
+  }
+
+  @keyframes gh-stars-in {
+    from {
+      opacity: 0;
+    }
+  }
+</style>

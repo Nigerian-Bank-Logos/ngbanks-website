@@ -1,0 +1,271 @@
+---
+/**
+ * Logo card templates. Cards are rendered client-side from the CDN data,
+ * so this component emits <template> elements the page script clones:
+ *   #logo-card-tpl       – a real card (fill .lc__logo, .lc__name, .lc__pill)
+ *   #logo-card-skel-tpl  – a loading skeleton with the same dimensions
+ */
+import CopyIcon from "./icons/CopyIcon.astro";
+import DownloadIcon from "./icons/DownloadIcon.astro";
+import ShareIcon from "./icons/ShareIcon.astro";
+import CheckIcon from "./icons/CheckIcon.astro";
+import LogoCardSkeleton from "./LogoCardSkeleton.astro";
+---
+
+<template id="logo-card-tpl">
+  <article class="lc">
+    <img
+      class="lc__logo"
+      width="56"
+      height="56"
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+    <div class="lc__meta">
+      <h3 class="lc__name"></h3>
+      <span class="lc__pill"></span>
+    </div>
+    <div class="lc__actions">
+      <button
+        type="button"
+        class="lc__btn"
+        data-action="copy"
+        aria-label="Copy SVG"
+        data-tooltip="Copy SVG"
+      >
+        <CopyIcon class="lc__icon lc__icon--idle" />
+        <CheckIcon class="lc__icon lc__icon--done" />
+      </button>
+      <button
+        type="button"
+        class="lc__btn"
+        data-action="download"
+        aria-label="Download SVG"
+        data-tooltip="Download SVG"
+      >
+        <DownloadIcon class="lc__icon lc__icon--idle" />
+        <CheckIcon class="lc__icon lc__icon--done" />
+      </button>
+      <!-- Share: hidden until link-to-icon behaviour is designed -->
+      <button
+        type="button"
+        class="lc__btn"
+        data-action="share"
+        aria-label="Copy link"
+        data-tooltip="Copy link"
+        hidden
+      >
+        <ShareIcon class="lc__icon lc__icon--idle" />
+      </button>
+    </div>
+  </article>
+</template>
+
+<template id="logo-card-skel-tpl">
+  <LogoCardSkeleton />
+</template>
+
+<style is:global>
+  .lc {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    min-width: 0;
+    padding: 20px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  .lc:not(.lc--skeleton):hover {
+    background: #f6f6f6;
+  }
+
+  .lc__logo {
+    display: block;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    outline: 1px solid rgba(0, 0, 0, 0.08);
+    outline-offset: -1px;
+    background: #fff;
+    object-fit: cover;
+  }
+
+  .lc__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .lc__name {
+    margin: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    letter-spacing: -0.02em;
+    color: #000;
+    text-align: center;
+  }
+
+  .lc__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: -0.02em;
+    color: #5d5d5d;
+    white-space: nowrap;
+  }
+
+  .lc__actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .lc__btn {
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #000;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 150ms ease;
+  }
+
+  .lc__btn[hidden] {
+    display: none;
+  }
+
+  /* Tooltip */
+  .lc__btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    z-index: 5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #000;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 2px);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  .lc__btn:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (hover: hover) {
+    .lc__btn:hover::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  .lc__btn:hover {
+    background: #eaeaea;
+  }
+
+  .lc__btn:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 1px;
+  }
+
+  .lc__btn:disabled {
+    cursor: progress;
+  }
+
+  .lc__icon--done {
+    display: none;
+  }
+
+  .lc__btn[data-state="done"] .lc__icon--idle {
+    display: none;
+  }
+
+  .lc__btn[data-state="done"] .lc__icon--done {
+    display: block;
+  }
+
+  .lc__btn[data-state="error"] {
+    color: #dc2626;
+  }
+
+  /* Skeleton */
+  @keyframes lc-shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+
+  .lc-skel {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: lc-shimmer 1.4s ease-in-out infinite;
+    border-radius: 4px;
+  }
+
+  .lc--skeleton .lc__logo {
+    outline: 0;
+    border-radius: 50%;
+  }
+
+  .lc-skel--name {
+    width: 60%;
+    height: 18px;
+  }
+
+  .lc-skel--pill {
+    width: 96px;
+    height: 24px;
+    border-radius: 9999px;
+  }
+
+  .lc-skel--btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lc-skel {
+      animation: none;
+    }
+  }
+</style>
