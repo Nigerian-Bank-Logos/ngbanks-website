@@ -1,18 +1,31 @@
 ---
 import Logo from "../components/icons/Logo.astro";
 import FigmaIcon from "../components/icons/FigmaIcon.astro";
-import GithubIcon from "../components/icons/GithubIcon.astro";
+import BalanceIcon from "../components/icons/BalanceIcon.astro";
+import ArrowUpRightIcon from "../components/icons/ArrowUpRightIcon.astro";
+import ArrowDownIcon from "../components/icons/ArrowDownIcon.astro";
+import GithubStars from "../components/GithubStars.astro";
 import PhoneMockup from "../components/PhoneMockup.astro";
 import DesktopMockup from "../components/DesktopMockup.astro";
-import FloatingFilter from "../components/FloatingFilter.astro";
+import LibrarySection from "../components/LibrarySection.astro";
+import SiteFooter from "../components/SiteFooter.astro";
 import Analytics from "@vercel/analytics/astro";
+import {
+  DOCS_URL,
+  FIGMA_LIBRARY_URL,
+  FIGMA_PLUGIN_URL,
+} from "../lib/constants";
+
+const ext = { target: "_blank", rel: "noopener noreferrer" };
+
+const canonicalUrl = new URL("/", Astro.site).href;
+const ogImageUrl = new URL("/og-image.png", Astro.site).href;
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>
@@ -31,14 +44,32 @@ import Analytics from "@vercel/analytics/astro";
       property="og:description"
       content="A free, open-source collection of 500+ Nigerian bank logos for use in web and mobile applications."
     />
-    <meta property="og:image" content="/og-image.png" />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Nigerian Bank Logos" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Nigerian Bank Logos" />
+    <meta
+      name="twitter:description"
+      content="A free, open-source collection of 500+ Nigerian bank logos for use in web and mobile applications."
+    />
+    <meta name="twitter:image" content={ogImageUrl} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://rsms.me" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=BBH+Sans+Hegarty&display=swap"
       rel="stylesheet"
     />
+    <!-- Inter from its official source: Google Fonts strips the ss/cv features -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     <script is:inline>
       try {
         var _t = localStorage.getItem("active-tab");
@@ -48,141 +79,166 @@ import Analytics from "@vercel/analytics/astro";
     <script
       defer
       src="https://cloud.umami.is/script.js"
-      data-website-id="d8261c27-3be9-4bc4-a38b-dea4d49dccd0"></script>
+      data-website-id="d8261c27-3be9-4bc4-a38b-dea4d49dccd0"
+    ></script>
     <Analytics />
   </head>
   <body>
-    <main class="hero">
-      <aside class="sidebar">
-        <div class="sidebar__top">
-          <a href="/" class="logo" aria-label="Home">
-            <Logo width={64} height={64} />
+    <div class="top">
+      <header class="hd">
+        <a href="/" class="hd__brand" aria-label="Nigerian Bank Logos home">
+          <span class="hd__logo">
+            <Logo width={51} height={55} />
+          </span>
+          <span class="hd__name">
+            Nigerian
+            <br />
+            Bank Logos
+          </span>
+        </a>
+
+        <nav class="hd__actions" aria-label="Resources">
+          <a
+            href={FIGMA_LIBRARY_URL}
+            class="hd__btn"
+            {...ext}
+            data-umami-event="Figma Button Clicked"
+            data-track="figma"
+          >
+            <FigmaIcon />
+            <span>Design</span>
           </a>
-          <nav class="nav">
-            <a href="/" class="nav__link nav__home">Home</a>
-            <a href="/library" class="nav__link" data-umami-event="Library Nav Clicked">Library</a>
-            <a
-              href="https://www.figma.com/community/plugin/1654009668539012130"
-              class="nav__link"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-umami-event="Figma Plugin Nav Clicked"
-              data-track="nav-figma-plugin"
-            >
-              Figma plugin
-            </a>
-            <a
-              href="https://github.com/Nigerian-Bank-Logos/ng-bank-logos"
-              class="nav__link"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-umami-event="GitHub Nav Clicked"
-              data-track="nav-github">Github</a
-            >
-          </nav>
+          <a
+            href={FIGMA_PLUGIN_URL}
+            class="hd__btn"
+            {...ext}
+            data-umami-event="Figma Plugin Button Clicked"
+            data-track="figma-plugin"
+          >
+            <FigmaIcon />
+            <span>Plugin</span>
+          </a>
+          <GithubStars
+            class="hd__btn"
+            size={20}
+            event="GitHub Button Clicked"
+            track="github"
+          />
+        </nav>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__text">
+          <p class="hero__license">
+            <BalanceIcon size={24} />
+            Free to use under MIT License
+          </p>
+          <h1 class="hero__title" id="hero-title">
+            A free, open-source collection of{" "}
+            <span class="hero__count" data-count-to="500">
+              500
+            </span>
+            + Nigerian bank logos
+          </h1>
         </div>
 
-        <div class="sidebar__bottom">
-          <div class="headline-group">
-            <h1 class="headline">
-              A free, open-source <br /> collection of 500+ <br /> Nigerian bank logos
-            </h1>
-            <p class="subtext">Free to use under MIT License.</p>
-          </div>
-          <div class="button-group">
-            <a
-              href="https://www.figma.com/community/file/1646585282227125344/nigerian-bank-logos"
-              class="btn"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-umami-event="Figma Button Clicked"
-              data-track="figma"
-            >
-              <FigmaIcon />
-              <span>Figma</span>
-            </a>
-            <a
-              href="https://github.com/Nigerian-Bank-Logos/ng-bank-logos"
-              class="btn"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-umami-event="GitHub Button Clicked"
-              data-track="github"
-            >
-              <GithubIcon />
-              <span>Github</span>
-            </a>
-          </div>
+        <div class="hero__ctas">
+          <a
+            href={DOCS_URL}
+            class="cta"
+            {...ext}
+            aria-label="Read docs (for developers)"
+            data-umami-event="Read Docs Clicked"
+            data-track="read-docs"
+          >
+            <span class="cta__labels" aria-hidden="true">
+              <span>Open Github</span>
+              <span>For developers</span>
+            </span>
+            <ArrowUpRightIcon />
+          </a>
+          <a
+            href="#library"
+            class="cta"
+            aria-label="Explore logos (for designers)"
+            data-umami-event="Explore Logos Clicked"
+            data-track="explore-logos"
+          >
+            <span class="cta__labels" aria-hidden="true">
+              <span>Explore logos</span>
+              <span>For designers</span>
+            </span>
+            <ArrowDownIcon />
+          </a>
         </div>
-      </aside>
+      </section>
+    </div>
 
-      <div class="panel">
-        <div class="panel__stack">
-          <div class="tab-group" role="tablist" aria-label="View mode">
-            <button
-              class="tab-item"
-              role="tab"
-              aria-selected="false"
-              aria-label="Smartphone view"
-              data-tab="phone"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10 15H10.0084M5.83335 1.66667H14.1667C15.0872 1.66667 15.8334 2.41286 15.8334 3.33333V16.6667C15.8334 17.5871 15.0872 18.3333 14.1667 18.3333H5.83335C4.91288 18.3333 4.16669 17.5871 4.16669 16.6667V3.33333C4.16669 2.41286 4.91288 1.66667 5.83335 1.66667Z"
-                  stroke="#04000A"
-                  stroke-width="1.66667"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </button>
-            <button
-              class="tab-item"
-              role="tab"
-              aria-selected="false"
-              aria-label="Monitor view"
-              data-tab="monitor"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <g clip-path="url(#clip0_105_9275)">
-                  <path
-                    d="M6.66669 17.5H13.3334M10 14.1667V17.5M3.33335 2.5H16.6667C17.5872 2.5 18.3334 3.24619 18.3334 4.16667V12.5C18.3334 13.4205 17.5872 14.1667 16.6667 14.1667H3.33335C2.41288 14.1667 1.66669 13.4205 1.66669 12.5V4.16667C1.66669 3.24619 2.41288 2.5 3.33335 2.5Z"
-                    stroke="#04000A"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"></path>
-                </g>
-                <defs>
-                  <clipPath id="clip0_105_9275">
-                    <rect width="20" height="20" fill="white"></rect>
-                  </clipPath>
-                </defs>
-              </svg>
-            </button>
-          </div>
-          <div id="view-phone">
-            <PhoneMockup />
-          </div>
-          <div id="view-monitor" hidden>
-            <DesktopMockup />
-          </div>
+    <section class="preview" aria-label="Preview">
+      <div class="preview__bg" aria-hidden="true"></div>
+
+      <div id="view-phone">
+        <PhoneMockup />
+      </div>
+      <div id="view-monitor" hidden>
+        <div class="dm-scaler">
+          <DesktopMockup />
         </div>
       </div>
-    </main>
-    <FloatingFilter />
+
+      <div class="tab-group" role="tablist" aria-label="View mode">
+        <button
+          class="tab-item"
+          role="tab"
+          aria-selected="false"
+          aria-label="Smartphone view"
+          data-tab="phone"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 15H10.0084M5.83335 1.66667H14.1667C15.0872 1.66667 15.8334 2.41286 15.8334 3.33333V16.6667C15.8334 17.5871 15.0872 18.3333 14.1667 18.3333H5.83335C4.91288 18.3333 4.16669 17.5871 4.16669 16.6667V3.33333C4.16669 2.41286 4.91288 1.66667 5.83335 1.66667Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </button>
+        <button
+          class="tab-item"
+          role="tab"
+          aria-selected="false"
+          aria-label="Monitor view"
+          data-tab="monitor"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M6.66669 17.5H13.3334M10 14.1667V17.5M3.33335 2.5H16.6667C17.5872 2.5 18.3334 3.24619 18.3334 4.16667V12.5C18.3334 13.4205 17.5872 14.1667 16.6667 14.1667H3.33335C2.41288 14.1667 1.66669 13.4205 1.66669 12.5V4.16667C1.66669 3.24619 2.41288 2.5 3.33335 2.5Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <LibrarySection />
+
+    <SiteFooter />
   </body>
 </html>
 
@@ -191,9 +247,10 @@ import Analytics from "@vercel/analytics/astro";
 
   const labels: Record<string, string> = {
     figma: "Figma Button Clicked",
+    "figma-plugin": "Figma Plugin Button Clicked",
     github: "GitHub Button Clicked",
-    "nav-figma-plugin": "Figma Plugin Nav Clicked",
-    "nav-github": "GitHub Nav Clicked",
+    "read-docs": "Read Docs Clicked",
+    "explore-logos": "Explore Logos Clicked",
   };
 
   document.querySelectorAll<HTMLElement>("[data-track]").forEach((el) => {
@@ -210,25 +267,13 @@ import Analytics from "@vercel/analytics/astro";
     display: none;
   }
   html[data-tab="monitor"] #view-monitor {
-    display: block;
+    display: flex;
   }
   html[data-tab="phone"] #view-monitor {
     display: none;
   }
   html[data-tab="phone"] #view-phone {
     display: block;
-  }
-
-  /* Stable width for phone view — breaks the circular sizing dependency
-     between #view-phone (shrink-wrapped flex child) and .bc-outer (% width) */
-  #view-phone {
-    width: min(420px, calc(100% - 40px));
-  }
-
-  #view-monitor {
-    position: absolute;
-    top: 13%;
-    left: 12%;
   }
 
   /* Start both views invisible so GSAP can animate them in without a flash */
@@ -241,47 +286,8 @@ import Analytics from "@vercel/analytics/astro";
   html[data-tab="phone"] .tab-item[data-tab="phone"],
   html[data-tab="monitor"] .tab-item[data-tab="monitor"] {
     background: #ffffff;
-    border-color: #eef7fd;
-    box-shadow: 0px 6px 8px rgba(0, 117, 182, 0.15);
-  }
-
-  /* ── Design tokens ──────────────────────────── */
-  :root {
-    --color-text-primary: #030712;
-    --color-text-tertiary: #6b7280;
-    --color-border: #d1d5db;
-    --color-surface: #ffffff;
-    --color-panel: #91d7fe;
-
-    --font-size-sm: 1rem; /* 16px — nav links, button labels */
-    --font-size-md: 1.25rem; /* 20px — subtext */
-    --font-size-lg: 2.25rem; /* 36px — headline */
-
-    --letter-spacing-sm: -0.02em; /* -0.32px @ 16px */
-    --letter-spacing-md: -0.04em; /* -0.8px  @ 20px */
-    --letter-spacing-lg: -0.04em; /* -1.44px @ 36px */
-
-    /* Left panel: 400px ÷ 1440px = 27.78vw, bounded */
-    --sidebar-width: clamp(260px, 27.78vw, 520px);
-
-    --sidebar-pad-x: clamp(20px, 1.94vw, 28px);
-    --sidebar-pad-y-top: clamp(20px, 1.94vw, 28px);
-    --sidebar-pad-y-bottom: clamp(28px, 2.78vw, 40px);
-
-    font-feature-settings:
-      "ss01" on,
-      "ss02" on,
-      "ss03" on,
-      "ss04" on,
-      "ss05" on,
-      "ss10" on,
-      "ss09" on,
-      "cv01" on,
-      "cv05" on,
-      "cv06" on,
-      "cv08" on,
-      "cv11" on,
-      "cv10" on;
+    border-color: #ffffff;
+    color: #1f3141;
   }
 
   /* ── Reset ──────────────────────────────────── */
@@ -293,247 +299,389 @@ import Analytics from "@vercel/analytics/astro";
     padding: 0;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     font-family: "Inter", sans-serif;
-    background: var(--color-surface);
-    overflow: hidden;
+    /* Inter stylistic sets/variants — inherited by every Inter element */
     font-feature-settings:
-      "cv11" on,
-      "cv10" on,
-      "cv08" on,
+      "ss01" on,
+      "ss02" on,
+      "ss03" on,
+      "ss04" on,
+      "cv01" on,
+      "cv05" on,
       "cv06" on,
-      "cv01" on;
+      "cv10" on,
+      "cv11" on;
+    background: #1f3141;
+    color: #030712;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Layout ─────────────────────────────────── */
+  /* ── Header + hero ──────────────────────────── */
+  .top {
+    display: flex;
+    flex-direction: column;
+    gap: 100px;
+    padding: 28px;
+    background: #1f3141;
+    color: #91d7fe;
+    letter-spacing: -0.02em;
+  }
+
+  .hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-weight: 500;
+  }
+
+  .hd__brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: inherit;
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .hd__logo {
+    position: relative;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: #91d7fe;
+    overflow: hidden;
+  }
+
+  /* The logo SVG includes its drop-shadow area; offset it so the glyph sits centred. */
+  .hd__logo svg {
+    position: absolute;
+    --logo-h: 36px;
+    width: calc(var(--logo-h) * 1.594);
+    height: calc(var(--logo-h) * 1.719);
+    left: calc(50% - var(--logo-h) * 0.44 - var(--logo-h) * 0.366);
+    top: calc(50% - var(--logo-h) * 0.5 - var(--logo-h) * 0.225);
+  }
+
+  .hd__actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .hd__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 48px;
+    padding: 0 14px;
+    border: 2px solid #91d7fe;
+    border-radius: 4px;
+    color: #91d7fe;
+    font-size: 16px;
+    line-height: 20px;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .hd__btn.gh-stars {
+    gap: 2px;
+    color: #91d7fe;
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .hd__btn:hover,
+  .hd__btn.gh-stars:hover {
+    background: #91d7fe;
+    color: #1f3141;
+    opacity: 1;
+  }
+
+  .hd a:focus-visible,
+  .cta:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
   .hero {
     display: flex;
-    height: 100vh;
-    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    text-align: center;
   }
 
-  .sidebar {
-    width: var(--sidebar-width);
-    flex-shrink: 0;
-    height: 100%;
-    background: var(--color-surface);
+  .hero__text {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: var(--sidebar-pad-y-top) var(--sidebar-pad-x)
-      var(--sidebar-pad-y-bottom);
+    align-items: center;
+    gap: 10px;
   }
 
-  .panel {
-    position: relative;
-    flex: 1;
-    height: 100%;
-    background: var(--color-panel);
+  .hero__license {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    gap: 6px;
+    font-size: 20px;
+    line-height: 32px;
+  }
+
+  .hero__title {
+    max-width: 1384px;
+    font-family: "BBH Sans Hegarty", sans-serif;
+    font-feature-settings: normal;
+    font-weight: 400;
+    font-size: 90px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  /* Fixed-width digits so the headline doesn't reflow while counting */
+  .hero__count {
+    display: inline-block;
+    min-width: 3ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero__ctas {
+    display: flex;
+    gap: 16px;
+    font-weight: 500;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    padding-top: 40px;
+    gap: 8px;
+    height: 60px;
+    padding: 0 24px;
+    border: 2px solid #91d7fe;
+    border-radius: 4px;
+    color: #91d7fe;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .cta:hover,
+  .cta:focus-visible {
+    background: #91d7fe;
+    color: #1f3141;
+  }
+
+  /* Both labels share one grid cell, so the button keeps the wider label's width
+     and swapping between them doesn't shift the layout. */
+  .cta__labels {
+    display: grid;
+    justify-items: center;
     overflow: hidden;
   }
 
-  .panel__stack {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
+  .cta__labels > span {
+    grid-area: 1 / 1;
+    transition:
+      transform 250ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 250ms ease;
   }
 
-  /* ── Tab group ───────────────────────────────── */
-  .tab-group {
+  .cta__labels > span:last-child {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  .cta:hover .cta__labels > span:first-child,
+  .cta:focus-visible .cta__labels > span:first-child {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  .cta:hover .cta__labels > span:last-child,
+  .cta:focus-visible .cta__labels > span:last-child {
+    transform: none;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cta__labels > span {
+      transition: none;
+    }
+  }
+
+  /* ── Preview (mockups) ──────────────────────── */
+  .preview {
+    position: relative;
+    height: 800px;
+    background: #1f3141;
+    overflow: hidden;
     display: flex;
+    justify-content: center;
+  }
+
+  .preview__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      url("/images/guilloche.svg") -228px 379px / 1000px 1000px no-repeat,
+      url("/images/guilloche.svg") calc(100% + 257px) 379px / 1000px 1000px
+        no-repeat;
+    pointer-events: none;
+  }
+
+  #view-phone {
+    position: relative;
+    width: 415px;
+    margin-top: 70px;
+  }
+
+  #view-phone .bc-outer {
+    height: 850px;
+  }
+
+  /* The desktop mockup is a fixed 1628×928 frame; it's scaled to fit the
+     space between the toggles (see the script below). */
+  #view-monitor {
+    position: absolute;
+    inset: 70px 96px;
     align-items: center;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
-    padding: 2px;
-    gap: 0;
+    justify-content: center;
+  }
+
+  .dm-scaler {
+    flex-shrink: 0;
+    width: calc(1628px * var(--dm-scale, 0.7));
+    height: calc(928px * var(--dm-scale, 0.7));
+  }
+
+  .dm-scaler .dm-outer {
+    transform: scale(var(--dm-scale, 0.7));
+    transform-origin: top left;
+  }
+
+  /* ── Toggle ─────────────────────────────────── */
+  .tab-group {
+    position: absolute;
+    top: 50%;
+    right: 28px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 2;
   }
 
   .tab-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
-    border: 0.5px solid transparent;
-    border-radius: 8px;
-    background: none;
+    width: 44px;
+    height: 44px;
+    border: 2px solid #ffffff;
+    border-radius: 6px;
+    background: transparent;
+    color: #ffffff;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      box-shadow 0.15s ease,
-      border-color 0.15s ease;
+      background-color 150ms ease,
+      color 150ms ease;
   }
 
-  .tab-item--active {
-    background: #ffffff;
-    border-color: #eef7fd;
-    box-shadow: 0px 6px 8px rgba(0, 117, 182, 0.15);
+  .tab-item:hover {
+    background: rgba(255, 255, 255, 0.12);
   }
 
-  /* ── Logo ───────────────────────────────────── */
-  .logo {
-    display: inline-flex;
-    text-decoration: none;
-    margin-left: -10px;
+  .tab-item:focus-visible {
+    outline: 2px solid #91d7fe;
+    outline-offset: 2px;
   }
 
-  /* ── Nav ────────────────────────────────────── */
-  .sidebar__top {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .nav {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .nav__link {
-    font-size: var(--font-size-sm);
-    font-weight: 400;
-    color: var(--color-text-tertiary);
-    letter-spacing: var(--letter-spacing-sm);
-    line-height: 1.25;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .nav__link:hover {
-    color: var(--color-text-primary);
-  }
-
-  /* ── Bottom content ──────────────────────────── */
-  .sidebar__bottom {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .headline-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .headline {
-    font-size: var(--font-size-lg);
-    font-weight: 500;
-    color: var(--color-text-primary);
-    letter-spacing: var(--letter-spacing-lg);
-    line-height: 1;
-  }
-
-  .subtext {
-    font-size: var(--font-size-md);
-    font-weight: 400;
-    color: var(--color-text-tertiary);
-    letter-spacing: var(--letter-spacing-md);
-    line-height: 1.2;
-  }
-
-  /* ── Buttons ────────────────────────────────── */
-  .button-group {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 12px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    font-size: var(--font-size-sm);
-    font-weight: 400;
-    color: var(--color-text-primary);
-    letter-spacing: var(--letter-spacing-sm);
-    line-height: 1.25;
-    text-decoration: none;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-  }
-
-  .btn:hover {
-    border-color: var(--color-text-tertiary);
-  }
-
-  /* ── Mobile responsive ───────────────────────── */
-  @media (max-width: 768px) {
-    :root {
-      --font-size-lg: 1.75rem;
-      --font-size-md: 1.125rem;
+  /* ── Mobile ─────────────────────────────────── */
+  @media (max-width: 767px) {
+    .top {
+      gap: 100px;
+      padding: 20px 16px 20px;
     }
 
-    body {
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    .hero {
+    .hd {
       flex-direction: column;
-      height: auto;
-      min-height: 100dvh;
+      align-items: stretch;
+      gap: 20px;
     }
 
-    .sidebar__top {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+    .hd__btn {
+      flex: 1;
     }
 
-    .nav {
-      display: flex;
-      flex-direction: row;
-      gap: 16px;
+    .hero__license {
+      font-size: 16px;
+      line-height: 24px;
     }
 
-    .nav__home {
-      display: none;
+    .hero__license svg {
+      width: 20px;
+      height: 20px;
     }
 
-    /* .nav {
-      display: none;
-    } */
+    .hero__title {
+      font-size: 42px;
+    }
 
-    .sidebar {
+    .hero__ctas {
+      flex-direction: column;
+      align-self: stretch;
+    }
+
+    .cta {
       width: 100%;
-      height: auto;
-      justify-content: flex-start;
-      gap: 32px;
-      padding: 24px 20px;
     }
 
-    .panel {
-      height: auto;
-      min-height: 70vh;
-      overflow: visible;
-      padding-top: 24px;
-      padding-bottom: 32px;
+    .preview {
+      height: 645px;
     }
 
-    .tab-group {
-      display: none;
+    .preview__bg,
+    .tab-group,
+    #view-monitor {
+      display: none !important;
     }
 
     #view-phone {
       display: block !important;
+      width: calc(100% - 40px);
+      max-width: 415px;
+      margin-top: 37px;
     }
 
-    #view-monitor {
-      display: none !important;
+    #view-phone .bc-outer {
+      height: 686px;
     }
   }
 </style>
@@ -544,11 +692,21 @@ import Analytics from "@vercel/analytics/astro";
   const tabs = document.querySelectorAll<HTMLButtonElement>(".tab-item");
   const viewPhone = document.getElementById("view-phone")!;
   const viewMonitor = document.getElementById("view-monitor")!;
+  const scaler = viewMonitor.querySelector<HTMLElement>(".dm-scaler")!;
+
+  // Fit the desktop mockup inside its box without cropping.
+  const fitDesktop = () => {
+    const { width, height } = viewMonitor.getBoundingClientRect();
+    if (!width || !height) return;
+    const scale = Math.min(1, width / 1628, height / 928);
+    scaler.style.setProperty("--dm-scale", String(scale));
+  };
+  new ResizeObserver(fitDesktop).observe(viewMonitor);
 
   function activateTab(tabName: string) {
     const isPhone = tabName === "phone";
     // On mobile the phone view is always shown by CSS; animate it regardless of saved tab
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const incoming = isMobile ? viewPhone : isPhone ? viewPhone : viewMonitor;
 
     // Apply "from" state before CSS makes the element visible — no flash
@@ -556,12 +714,11 @@ import Analytics from "@vercel/analytics/astro";
 
     document.documentElement.setAttribute("data-tab", tabName);
     tabs.forEach((t) => {
-      const active = t.dataset.tab === tabName;
-      t.classList.toggle("tab-item--active", active);
-      t.setAttribute("aria-selected", String(active));
+      t.setAttribute("aria-selected", String(t.dataset.tab === tabName));
     });
     viewPhone.hidden = !isPhone;
     viewMonitor.hidden = isPhone;
+    if (!isPhone) fitDesktop();
 
     gsap.to(incoming, {
       y: 0,
@@ -572,13 +729,38 @@ import Analytics from "@vercel/analytics/astro";
     });
   }
 
-  const saved = localStorage.getItem("active-tab") ?? "phone";
+  // Hero "500+" count-up
+  const countEl = document.querySelector<HTMLElement>("[data-count-to]");
+  if (
+    countEl &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    const target = Number(countEl.dataset.countTo);
+    const counter = { value: 0 };
+    countEl.textContent = "0";
+    gsap.to(counter, {
+      value: target,
+      duration: 1.6,
+      delay: 0.2,
+      ease: "power2.out",
+      onUpdate: () => {
+        countEl.textContent = String(Math.round(counter.value));
+      },
+    });
+  }
+
+  let saved = "phone";
+  try {
+    saved = localStorage.getItem("active-tab") ?? "phone";
+  } catch {}
   activateTab(saved);
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       const name = tab.dataset.tab!;
-      localStorage.setItem("active-tab", name);
+      try {
+        localStorage.setItem("active-tab", name);
+      } catch {}
       activateTab(name);
     });
   });

@@ -1,0 +1,828 @@
+---
+/**
+ * The logo library: sticky nav (search, Figma/GitHub links), category menu and
+ * infinite-scroll grid. Rendered as a section of the home page; the nav sticks
+ * only while the section is on screen.
+ */
+import SearchIcon from "./icons/SearchIcon.astro";
+import GithubStars from "./GithubStars.astro";
+import LogoCard from "./LogoCard.astro";
+import LogoCardSkeleton from "./LogoCardSkeleton.astro";
+import { CATEGORIES, DEFAULT_CATEGORY } from "../lib/banks";
+import { FIGMA_LIBRARY_URL, FIGMA_PLUGIN_URL } from "../lib/constants";
+
+const menu = [{ id: "all", plural: "All" }, ...CATEGORIES];
+---
+
+<section id="library" class="lib" aria-label="Logo library">
+  <header class="lib-header">
+    <label class="lib-search">
+      <SearchIcon class="lib-search__icon" />
+      <input
+        id="lib-search"
+        class="lib-search__input"
+        type="search"
+        placeholder="Search"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Search banks by name, alias or bank code"
+        aria-keyshortcuts="Meta+K Control+K"
+      />
+      <span class="lib-kbd" aria-hidden="true">
+        <kbd id="lib-kbd-mod">⌘</kbd>
+        <kbd>K</kbd>
+      </span>
+    </label>
+
+    <div class="lib-links">
+      <span class="lib-figma">
+        <a
+          href={FIGMA_LIBRARY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-umami-event="Library Figma File Clicked"
+        >
+          Figma Library
+        </a>
+        <span aria-hidden="true">/</span>
+        <a
+          href={FIGMA_PLUGIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-umami-event="Library Figma Plugin Clicked"
+        >
+          Plugin
+        </a>
+      </span>
+      <span class="lib-divider" aria-hidden="true"></span>
+      <GithubStars />
+    </div>
+  </header>
+
+  <div class="lib-body">
+    <aside class="lib-panel" id="lib-panel" aria-label="Categories">
+      <div
+        class="lib-menu"
+        id="lib-menu"
+        role="radiogroup"
+        aria-label="Bank category"
+      >
+        {menu.map((c) => (
+          <button
+            type="button"
+            class="lib-menu__item"
+            role="radio"
+            aria-checked={c.id === DEFAULT_CATEGORY ? "true" : "false"}
+            tabindex={c.id === DEFAULT_CATEGORY ? 0 : -1}
+            data-category={c.id}
+          >
+            <span class="lib-menu__label">{c.plural}</span>
+            <span class="lib-menu__count" data-count>
+              <span class="lib-count-skel" />
+            </span>
+          </button>
+        ))}
+      </div>
+    </aside>
+
+    <div class="lib-main">
+      <div class="lib-grid" id="lib-grid" aria-busy="true">
+        {Array.from({ length: 12 }, () => (
+          <LogoCardSkeleton />
+        ))}
+      </div>
+      <p class="lib-empty" id="lib-empty" hidden></p>
+      <div class="lib-sentinel" id="lib-sentinel" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<LogoCard />
+
+<script>
+  import { PAGE_SIZE } from "../lib/constants";
+  import {
+    type Bank,
+    CATEGORIES,
+    DEFAULT_CATEGORY,
+    categoryLabel,
+    loadBanks,
+    matchesQuery,
+    slugify,
+  } from "../lib/banks";
+
+  const $ = <T extends HTMLElement>(id: string) =>
+    document.getElementById(id) as T;
+
+  const grid = $<HTMLDivElement>("lib-grid");
+  const empty = $<HTMLParagraphElement>("lib-empty");
+  const sentinel = $<HTMLDivElement>("lib-sentinel");
+  const input = $<HTMLInputElement>("lib-search");
+  const menuEl = $<HTMLDivElement>("lib-menu");
+  const panel = $<HTMLElement>("lib-panel");
+  const mobile = window.matchMedia("(max-width: 767px)");
+  const cardTpl = $<HTMLTemplateElement>("logo-card-tpl");
+  const section = $<HTMLElement>("library");
+  const header = section.querySelector<HTMLElement>(".lib-header")!;
+  const logosEl = grid;
+
+  let banks: Bank[] = [];
+  let filtered: Bank[] = [];
+  let rendered = 0;
+
+  const params = new URLSearchParams(location.search);
+  const state = {
+    category: params.get("category") ?? DEFAULT_CATEGORY,
+    query: "",
+  };
+
+  const menuItems = () => [
+    ...menuEl.querySelectorAll<HTMLButtonElement>(".lib-menu__item"),
+  ];
+
+  /* ── Rendering ─────────────────────────────── */
+
+  function createCard(bank: Bank, index: number): HTMLElement {
+    const node = cardTpl.content.firstElementChild!.cloneNode(
+      true,
+    ) as HTMLElement;
+    node.dataset.index = String(index);
+
+    const img = node.querySelector<HTMLImageElement>(".lc__logo")!;
+    img.src = bank.logos.svg;
+    img.alt = `${bank.name} logo`;
+
+    const name = node.querySelector<HTMLElement>(".lc__name")!;
+    name.textContent = bank.name;
+    name.title = bank.name;
+
+    node.querySelector(".lc__pill")!.textContent = categoryLabel(
+      bank.category,
+      "singular",
+    );
+
+    node.querySelectorAll<HTMLButtonElement>(".lc__btn").forEach((btn) => {
+      const action = btn.dataset.action;
+      btn.setAttribute(
+        "aria-label",
+        action === "copy"
+          ? `Copy ${bank.name} SVG`
+          : action === "download"
+            ? `Download ${bank.name} SVG`
+            : `Copy link to ${bank.name}`,
+      );
+      if (action === "copy") btn.dataset.umamiEvent = "Library Logo Copied";
+      if (action === "download")
+        btn.dataset.umamiEvent = "Library Logo Downloaded";
+      btn.dataset.umamiEventBank = bank.name;
+    });
+
+    return node;
+  }
+
+  function renderNext() {
+    const slice = filtered.slice(rendered, rendered + PAGE_SIZE);
+    if (!slice.length) return;
+    const frag = document.createDocumentFragment();
+    slice.forEach((b, i) => frag.appendChild(createCard(b, rendered + i)));
+    grid.appendChild(frag);
+    rendered += slice.length;
+  }
+
+  /** Keep appending batches while the sentinel is within 600px of the viewport. */
+  function fill() {
+    while (
+      rendered < filtered.length &&
+      sentinel.getBoundingClientRect().top < innerHeight + 600
+    ) {
+      renderNext();
+    }
+  }
+
+  function apply() {
+    const q = state.query;
+    filtered = banks.filter(
+      (b) =>
+        (state.category === "all" || b.category === state.category) &&
+        matchesQuery(b, q),
+    );
+    rendered = 0;
+    grid.replaceChildren();
+    grid.removeAttribute("aria-busy");
+
+    const n = filtered.length;
+
+    empty.hidden = n > 0;
+    if (!n) {
+      const where =
+        state.category === "all" ? "" : ` in ${categoryLabel(state.category)}`;
+      empty.textContent = q
+        ? `No logos match “${input.value.trim()}”${where}.`
+        : `No logos${where}.`;
+    }
+
+    // If the results' top is hidden under the sticky nav (and, on mobile, the
+    // sticky category strip), bring it back into view.
+    const barBottom = Math.max(
+      header.getBoundingClientRect().bottom,
+      mobile.matches ? panel.getBoundingClientRect().bottom : 0,
+    );
+    const delta = logosEl.getBoundingClientRect().top - barBottom;
+    if (delta < 0) window.scrollBy({ top: delta });
+
+    renderNext();
+    fill();
+  }
+
+  new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) fill();
+    },
+    { rootMargin: "0px 0px 600px 0px" },
+  ).observe(sentinel);
+
+  /* ── Category menu ─────────────────────────── */
+
+  function setCategory(id: string, { focus = false } = {}) {
+    const items = menuItems();
+    if (!items.some((el) => el.dataset.category === id)) id = DEFAULT_CATEGORY;
+    state.category = id;
+
+    for (const el of items) {
+      const on = el.dataset.category === id;
+      el.setAttribute("aria-checked", String(on));
+      el.tabIndex = on ? 0 : -1;
+      if (on && focus) el.focus();
+    }
+
+    const url = new URL(location.href);
+    if (id === DEFAULT_CATEGORY) url.searchParams.delete("category");
+    else url.searchParams.set("category", id);
+    history.replaceState(null, "", url);
+
+    if (banks.length) apply();
+  }
+
+  menuEl.addEventListener("click", (e) => {
+    const item = (e.target as HTMLElement).closest<HTMLButtonElement>(
+      ".lib-menu__item",
+    );
+    if (!item) return;
+    setCategory(item.dataset.category!);
+    // Keep the chosen chip visible in the mobile strip.
+    if (mobile.matches)
+      item.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+
+  menuEl.addEventListener("keydown", (e) => {
+    const keys = [
+      "ArrowDown",
+      "ArrowUp",
+      "ArrowRight",
+      "ArrowLeft",
+      "Home",
+      "End",
+    ];
+    if (!keys.includes(e.key)) return;
+    e.preventDefault();
+    const items = menuItems();
+    const i = items.findIndex((el) => el.dataset.category === state.category);
+    const next =
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? items.length - 1
+          : e.key === "ArrowDown" || e.key === "ArrowRight"
+            ? (i + 1) % items.length
+            : (i - 1 + items.length) % items.length;
+    setCategory(items[next].dataset.category!, { focus: true });
+  });
+
+  function populateMenu() {
+    const counts = new Map<string, number>();
+    for (const b of banks)
+      counts.set(b.category, (counts.get(b.category) ?? 0) + 1);
+
+    // Categories in the data that the menu doesn't know about yet get appended.
+    const known = new Set(CATEGORIES.map((c) => c.id));
+    for (const id of counts.keys()) {
+      if (known.has(id)) continue;
+      const tpl = menuItems()[1].cloneNode(true) as HTMLButtonElement;
+      tpl.dataset.category = id;
+      tpl.querySelector(".lib-menu__label")!.textContent = categoryLabel(id);
+      menuEl.appendChild(tpl);
+    }
+
+    for (const el of menuItems()) {
+      const id = el.dataset.category!;
+      const n = id === "all" ? banks.length : (counts.get(id) ?? 0);
+      el.querySelector("[data-count]")!.textContent = String(n);
+      el.hidden = n === 0 && id !== "all";
+    }
+  }
+
+  /* ── Search ────────────────────────────────── */
+
+  let debounce: number | undefined;
+  input.addEventListener("input", () => {
+    clearTimeout(debounce);
+    debounce = window.setTimeout(() => {
+      state.query = input.value.trim().toLowerCase();
+      if (banks.length) apply();
+    }, 120);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (input.value) {
+      input.value = "";
+      input.dispatchEvent(new Event("input"));
+    } else {
+      input.blur();
+    }
+  });
+
+  const isMac = /Mac|iPhone|iPad|iPod/.test(
+    navigator.platform || navigator.userAgent,
+  );
+  if (!isMac) $("lib-kbd-mod").textContent = "Ctrl";
+
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      // Bring the library to the top of the screen if it isn't there yet.
+      if (section.getBoundingClientRect().top > 0) section.scrollIntoView();
+      input.focus({ preventScroll: true });
+      input.select();
+    }
+  });
+
+  /* ── Card actions ──────────────────────────── */
+
+  const svgCache = new Map<string, Promise<string>>();
+  function getSvg(url: string): Promise<string> {
+    let p = svgCache.get(url);
+    if (!p) {
+      p = fetch(url).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      });
+      p.catch(() => svgCache.delete(url));
+      svgCache.set(url, p);
+    }
+    return p;
+  }
+
+  async function copySvg(url: string) {
+    // Passing a promise to ClipboardItem keeps the user-gesture alive in Safari while we fetch.
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      try {
+        const blob = getSvg(url).then(
+          (t) => new Blob([t], { type: "text/plain" }),
+        );
+        await navigator.clipboard.write([
+          new ClipboardItem({ "text/plain": blob }),
+        ]);
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    await navigator.clipboard.writeText(await getSvg(url));
+  }
+
+  async function downloadSvg(bank: Bank) {
+    const text = await getSvg(bank.logos.svg);
+    const href = URL.createObjectURL(
+      new Blob([text], { type: "image/svg+xml" }),
+    );
+    const a = Object.assign(document.createElement("a"), {
+      href,
+      download: `${slugify(bank.name)}.svg`,
+    });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+  }
+
+  const resetTimers = new WeakMap<HTMLButtonElement, number>();
+  function flash(
+    btn: HTMLButtonElement,
+    result: "done" | "error",
+    label: string,
+  ) {
+    const original = btn.dataset.label ?? btn.getAttribute("aria-label")!;
+    btn.dataset.label = original;
+    btn.dataset.state = result;
+    btn.setAttribute("aria-label", label);
+    clearTimeout(resetTimers.get(btn));
+    resetTimers.set(
+      btn,
+      window.setTimeout(() => {
+        delete btn.dataset.state;
+        btn.setAttribute("aria-label", original);
+      }, 1500),
+    );
+  }
+
+  grid.addEventListener("click", async (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(
+      ".lc__btn",
+    );
+    if (!btn || btn.disabled) return;
+    const card = btn.closest<HTMLElement>(".lc")!;
+    const bank = filtered[Number(card.dataset.index)];
+    if (!bank) return;
+
+    btn.disabled = true;
+    try {
+      if (btn.dataset.action === "copy") {
+        await copySvg(bank.logos.svg);
+        flash(btn, "done", "Copied");
+      } else if (btn.dataset.action === "download") {
+        await downloadSvg(bank);
+        flash(btn, "done", "Downloaded");
+      }
+    } catch {
+      flash(
+        btn,
+        "error",
+        btn.dataset.action === "copy"
+          ? "Couldn't copy, try again"
+          : "Couldn't download, try again",
+      );
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* ── Boot ──────────────────────────────────── */
+
+  setCategory(state.category);
+
+  loadBanks()
+    .then((data) => {
+      banks = data;
+      populateMenu();
+      setCategory(state.category);
+    })
+    .catch(() => {
+      grid.replaceChildren();
+      grid.removeAttribute("aria-busy");
+      empty.hidden = false;
+      empty.textContent =
+        "Couldn't load logos. Check your connection and refresh the page.";
+    });
+</script>
+
+<style is:global>
+  :root {
+    --lib-bg: #ffffff;
+    --lib-line: rgba(0, 0, 0, 0.08);
+    --lib-muted: rgba(0, 0, 0, 0.5);
+    --lib-active: #f2f2f2;
+    --lib-count: #a7a7a7;
+    --lib-chip: #e6e6e6;
+    --lib-header-h: 72px;
+    --lib-strip-h: 0px;
+    --lib-main-pad: 24px;
+
+    --letter-spacing-sm: -0.02em;
+  }
+
+  .lib {
+    /* Fill at least one screen so short result sets (e.g. a 5-bank category)
+       don't let the footer ride up mid-viewport. svh avoids overshooting on
+       mobile when the browser toolbar is visible. */
+    min-height: 100vh;
+    min-height: 100svh;
+    background: var(--lib-bg);
+    color: #000;
+    letter-spacing: var(--letter-spacing-sm);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .lib [hidden] {
+    display: none !important;
+  }
+
+  /* ── Nav (sticky while the section is on screen) ── */
+  .lib-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: var(--lib-header-h);
+    padding: 0 32px;
+    background: var(--lib-bg);
+    border-bottom: 1px solid var(--lib-line);
+  }
+
+  .lib-search {
+    flex: 0 1 400px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 12px;
+    background: var(--lib-bg);
+    border: 1px solid var(--lib-line);
+    border-radius: 4px;
+    cursor: text;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .lib-search:focus-within {
+    border-color: #000;
+    box-shadow: 0 0 0 1px #000;
+  }
+
+  .lib-search__icon {
+    flex-shrink: 0;
+    color: var(--lib-muted);
+  }
+
+  .lib-search:focus-within .lib-search__icon {
+    color: #000;
+  }
+
+  .lib-search__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    line-height: 18px;
+    letter-spacing: var(--letter-spacing-sm);
+    color: #000;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .lib-search__input::placeholder {
+    color: var(--lib-muted);
+  }
+
+  .lib-search__input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .lib-kbd {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .lib-kbd kbd {
+    min-width: 20px;
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: var(--lib-chip);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--lib-muted);
+    text-align: center;
+  }
+
+  .lib-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .lib-figma {
+    display: inline-flex;
+    gap: 4px;
+    font-size: 16px;
+    line-height: 20px;
+    color: #030712;
+  }
+
+  .lib-figma a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-skip-ink: none;
+    text-underline-position: from-font;
+  }
+
+  .lib-figma a:hover {
+    opacity: 0.7;
+  }
+
+  .lib-figma a:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .lib-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--lib-chip);
+  }
+
+  .lib-links .gh-stars {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  /* ── Body ───────────────────────────────────── */
+  .lib-body {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .lib-panel {
+    position: sticky;
+    top: var(--lib-header-h);
+    flex-shrink: 0;
+    width: 284px;
+    padding: 24px;
+  }
+
+  .lib-menu {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lib-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: var(--letter-spacing-sm);
+    color: #000;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+
+  .lib-menu__item:hover {
+    background: rgba(242, 242, 242, 0.6);
+  }
+
+  .lib-menu__item[aria-checked="true"] {
+    background: var(--lib-active);
+  }
+
+  .lib-menu__item:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: -2px;
+  }
+
+  .lib-menu__count {
+    color: var(--lib-count);
+  }
+
+  /* ── Grid ───────────────────────────────────── */
+  .lib-main {
+    flex: 1;
+    min-width: 0;
+    padding: var(--lib-main-pad);
+    padding-left: 0;
+  }
+
+  .lib-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .lib-grid .lc {
+    min-height: 216px;
+  }
+
+  .lib-empty {
+    padding: 48px 16px;
+    font-size: 16px;
+    line-height: 20px;
+    color: var(--lib-muted);
+    text-align: center;
+  }
+
+  .lib-sentinel {
+    height: 1px;
+  }
+
+  /* Loading placeholder for the counts */
+  .lib-count-skel {
+    display: inline-block;
+    width: 18px;
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: lc-shimmer 1.4s ease-in-out infinite;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 1279px) {
+    .lib-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .lib-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .lib-kbd {
+      display: none;
+    }
+  }
+
+  /* ── Mobile: search on top, categories as a sticky chip strip ── */
+  @media (max-width: 767px) {
+    :root {
+      --lib-main-pad: 16px;
+      --lib-strip-h: 57px;
+    }
+
+    .lib-header {
+      padding: 0 16px;
+      border-bottom: 0;
+    }
+
+    .lib-search {
+      flex: 1;
+    }
+
+    .lib-links {
+      display: none;
+    }
+
+    .lib-body {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .lib-panel {
+      z-index: 15;
+      width: auto;
+      height: var(--lib-strip-h);
+      padding: 0;
+      background: var(--lib-bg);
+      border-top: 1px solid var(--lib-line);
+      border-bottom: 1px solid var(--lib-line);
+    }
+
+    .lib-menu {
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      padding: 0 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .lib-menu::-webkit-scrollbar {
+      display: none;
+    }
+
+    .lib-menu__item {
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .lib-main {
+      padding: var(--lib-main-pad);
+    }
+
+    .lib-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    .lib-grid .lc {
+      min-height: 208px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lib-count-skel {
+      animation: none;
+    }
+  }
+</style>

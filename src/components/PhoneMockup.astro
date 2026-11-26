@@ -1,9 +1,3 @@
----
-
-import LogoDrawer from "./LogoDrawer.astro";
-
----
-
 <div class="bc-outer">
   <div class="bc-inner">
     <!-- Status bar -->
@@ -125,13 +119,11 @@ import LogoDrawer from "./LogoDrawer.astro";
     >
     </div>
     <div class="bc-indicator"></div>
-    <LogoDrawer variant="sheet" source="phone" />
   </div>
 </div>
 
 <script>
-  import { BANKS_CDN_URL } from "../lib/constants";
-  import type { Bank, BankSelectDetail, LogoStyle } from "../types/bank";
+  import { type Bank, loadBanks } from "../lib/banks";
 
   const list = document.getElementById("bc-list")!;
   const input = document.getElementById("bc-search") as HTMLInputElement;
@@ -151,8 +143,6 @@ import LogoDrawer from "./LogoDrawer.astro";
   setInterval(updateStatusTime, 1000);
 
   let banks: Bank[] = [];
-  let activeCategories: Set<string> | null = null; // null = all
-  let currentStyle: LogoStyle = "circle";
 
   function escapeAttr(value: string): string {
     return value
@@ -163,27 +153,6 @@ import LogoDrawer from "./LogoDrawer.astro";
 
   function rowAttrs(b: Bank): string {
     return `data-name="${escapeAttr(b.name)}" data-png="${escapeAttr(b.logos.png)}" data-svg="${escapeAttr(b.logos.svg)}" data-category="${escapeAttr(b.category)}"`;
-  }
-
-  function bankFromRow(row: HTMLElement): Bank {
-    return {
-      name: row.dataset.name!,
-      category: row.dataset.category ?? "",
-      aliases: [],
-      logos: {
-        png: row.dataset.png!,
-        svg: row.dataset.svg!,
-      },
-    };
-  }
-
-  function dispatchBankSelect(bank: Bank) {
-    const detail: BankSelectDetail = {
-      bank,
-      style: currentStyle,
-      source: "phone",
-    };
-    window.dispatchEvent(new CustomEvent("bank:select", { detail }));
   }
 
   const BATCH = 50;
@@ -241,13 +210,12 @@ import LogoDrawer from "./LogoDrawer.astro";
       list.innerHTML = '<p class="bc-empty">No banks found</p>';
       return;
     }
-    const placeholder = `/_default/${currentStyle}.svg`;
     list.innerHTML = data
       .map(
         (b, i) => `
       <div class="bc-row" role="listitem" ${rowAttrs(b)}>
         <div class="bc-logo">
-          <img id="ra-${i}" src="${placeholder}" alt="${escapeAttr(b.name)}">
+          <img id="ra-${i}" src="${PLACEHOLDER}" alt="${escapeAttr(b.name)}">
         </div>
         <span class="bc-row__name">${b.name}</span>
       </div>`,
@@ -258,24 +226,22 @@ import LogoDrawer from "./LogoDrawer.astro";
 
   function getFiltered(): Bank[] {
     const q = input.value.toLowerCase().trim();
-    let data = banks;
-    if (activeCategories !== null) {
-      data = data.filter((b) => activeCategories!.has(b.category));
-    }
-    if (q) {
-      data = data.filter(
-        (b) =>
-          b.name.toLowerCase().includes(q) ||
-          b.aliases.some((a) => a.toLowerCase().includes(q)),
-      );
-    }
-    return data;
+    if (!q) return banks;
+    return banks.filter(
+      (b) =>
+        b.name.toLowerCase().includes(q) ||
+        b.aliases.some((a) => a.toLowerCase().includes(q)),
+    );
   }
 
   async function init() {
     renderSkeletons();
-    const res = await fetch(BANKS_CDN_URL);
-    banks = (await res.json()).banks;
+    try {
+      banks = await loadBanks();
+    } catch {
+      list.innerHTML = '<p class="bc-empty">Couldn\'t load banks</p>';
+      return;
+    }
 
     const first = banks.slice(0, BATCH);
     const rest = banks.slice(BATCH);
@@ -310,28 +276,6 @@ import LogoDrawer from "./LogoDrawer.astro";
     renderAll(getFiltered());
   });
 
-  window.addEventListener("ff:filter", (e) => {
-    const { category } = (e as CustomEvent<{ category: string }>).detail;
-    activeCategories = category === "all" ? null : new Set([category]);
-    renderSkeletons();
-    setTimeout(() => renderAll(getFiltered()), 10);
-  });
-
-  window.addEventListener("ff:style", (e) => {
-    const { style } = (e as CustomEvent<{ style: string }>).detail;
-    currentStyle = style;
-    list.dataset.style = style;
-    renderSkeletons();
-    setTimeout(() => renderAll(getFiltered()), 10);
-  });
-
-  list.addEventListener("click", (e) => {
-    const rowEl = (e.target as Element).closest<HTMLElement>(".bc-row[data-name]");
-    if (!rowEl || rowEl.classList.contains("bc-row--skeleton")) return;
-    dispatchBankSelect(bankFromRow(rowEl));
-  });
-
-  list.dataset.style = "circle";
   init();
 </script>
 
@@ -564,12 +508,8 @@ import LogoDrawer from "./LogoDrawer.astro";
     box-sizing: border-box;
   }
 
-  [data-style="circle"] .bc-logo img {
+  .bc-logo img {
     border-radius: 50%;
-  }
-
-  [data-style="square"] .bc-logo img {
-    border-radius: 4px;
   }
 
   /* ── Row name ─────────────────────────────── */

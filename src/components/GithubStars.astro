@@ -12,9 +12,19 @@ interface Props {
   repo?: string;
   size?: number;
   class?: string;
+  /** Umami event name sent on click. */
+  event?: string;
+  /** Key for the page's Vercel `track()` mapping, if any. */
+  track?: string;
 }
 
-const { repo = GITHUB_REPO, size = 24, class: className } = Astro.props;
+const {
+  repo = GITHUB_REPO,
+  size = 24,
+  class: className,
+  event = "GitHub Stars Clicked",
+  track,
+} = Astro.props;
 ---
 
 <a
@@ -24,7 +34,8 @@ const { repo = GITHUB_REPO, size = 24, class: className } = Astro.props;
   rel="noopener noreferrer"
   data-github-stars={repo}
   aria-label={`${repo} on GitHub`}
-  data-umami-event="GitHub Stars Clicked"
+  data-umami-event={event}
+  data-track={track}
 >
   <GithubMarkIcon size={size} />
   <span class="gh-stars__count" data-stars aria-hidden="true"></span>
