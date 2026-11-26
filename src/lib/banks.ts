@@ -1,3 +1,5 @@
+import { BANKS_CDN_URL } from './constants';
+
 export type Bank = {
   name: string;
   aliases: string[];
@@ -12,6 +14,23 @@ export type BanksResponse = {
   metadata?: { total_banks: number; last_updated: string };
 };
 
+let banksRequest: Promise<Bank[]> | undefined;
+
+/**
+ * Fetches the bank list once per page load; every caller shares the same request.
+ * A failed request is forgotten so the next call can retry.
+ */
+export function loadBanks(): Promise<Bank[]> {
+  banksRequest ??= fetch(BANKS_CDN_URL)
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json() as Promise<BanksResponse>;
+    })
+    .then((data) => data.banks);
+  banksRequest.catch(() => (banksRequest = undefined));
+  return banksRequest;
+}
+
 /** Menu order + labels. `plural` is used in the sidebar, `singular` on the card pill. */
 export const CATEGORIES: { id: string; plural: string; singular: string }[] = [
   { id: 'commercial_banks', plural: 'Commercial banks', singular: 'Commercial bank' },
@@ -23,7 +42,10 @@ export const CATEGORIES: { id: string; plural: string; singular: string }[] = [
   { id: 'merchant_banks', plural: 'Merchant banks', singular: 'Merchant bank' },
 ];
 
-const humanize = (id: string) => {
+/** Category the library opens on when the URL doesn't pick one. */
+export const DEFAULT_CATEGORY = 'commercial_banks';
+
+const humanize =(id: string) => {
   const s = id.replace(/_/g, ' ');
   return s.charAt(0).toUpperCase() + s.slice(1);
 };

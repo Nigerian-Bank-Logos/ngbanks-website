@@ -1,15 +1,13 @@
 ---
 /**
- * Logo card templates. Cards are rendered client-side from the CDN data,
- * so this component emits <template> elements the page script clones:
- *   #logo-card-tpl       – a real card (fill .lc__logo, .lc__name, .lc__pill)
- *   #logo-card-skel-tpl  – a loading skeleton with the same dimensions
+ * Logo card template. Cards are rendered client-side from the CDN data, so
+ * this component emits #logo-card-tpl for the page script to clone
+ * (fill .lc__logo, .lc__name, .lc__pill).
  */
 import CopyIcon from "./icons/CopyIcon.astro";
 import DownloadIcon from "./icons/DownloadIcon.astro";
 import ShareIcon from "./icons/ShareIcon.astro";
 import CheckIcon from "./icons/CheckIcon.astro";
-import LogoCardSkeleton from "./LogoCardSkeleton.astro";
 ---
 
 <template id="logo-card-tpl">
@@ -60,10 +58,6 @@ import LogoCardSkeleton from "./LogoCardSkeleton.astro";
       </button>
     </div>
   </article>
-</template>
-
-<template id="logo-card-skel-tpl">
-  <LogoCardSkeleton />
 </template>
 
 <style is:global>

@@ -1,0 +1,311 @@
+---
+import Logo from "./icons/Logo.astro";
+import BalanceIcon from "./icons/BalanceIcon.astro";
+import {
+  CREDITS,
+  EXPLORE_ICONS_URL,
+  FIGMA_LIBRARY_URL,
+  FIGMA_PLUGIN_URL,
+  GITHUB_URL,
+} from "../lib/constants";
+
+// Colours, strokes and lighting are read from the .glb's own viewer settings.
+const BANK_MODEL_SRC = "/images/models/bank.glb";
+// Degrees from straight above; dragging only spins the bank around its upright axis.
+const BANK_ORBIT_PITCH = 75;
+// Camera distance as a multiple of the exported view. Smaller = closer = bigger bank.
+const BANK_CAMERA_DISTANCE = 1;
+
+const ext = { target: "_blank", rel: "noopener noreferrer" };
+---
+
+<footer class="ft">
+  <div class="ft__wrap">
+    <div class="ft__content">
+      <div class="ft__top">
+        <span class="ft__logo">
+          <Logo width={51} height={55} />
+        </span>
+
+        <ul class="ft__links">
+          <li>
+            <span aria-hidden="true">↳</span>
+            <a
+              href={FIGMA_PLUGIN_URL}
+              {...ext}
+              data-umami-event="Footer Figma Plugin Clicked"
+            >
+              Figma Plugin
+            </a>
+            /
+            <a
+              href={FIGMA_LIBRARY_URL}
+              {...ext}
+              data-umami-event="Footer Figma Library Clicked"
+            >
+              Library
+            </a>
+          </li>
+          <li>
+            <span aria-hidden="true">↳</span>
+            <a
+              href={GITHUB_URL}
+              {...ext}
+              data-umami-event="Footer GitHub Clicked"
+            >
+              Github
+            </a>
+          </li>
+          <li>
+            <span aria-hidden="true">↳</span>
+            <a
+              href={EXPLORE_ICONS_URL}
+              data-umami-event="Footer Explore Icons Clicked"
+            >
+              Explore icons
+            </a>
+          </li>
+        </ul>
+
+        <div class="ft__about">
+          <p>
+            Nigerian bank logos is a fun project by
+            <a
+              href={CREDITS.author.url}
+              {...ext}
+              data-umami-event="Footer Credit Clicked"
+              data-umami-event-person="author"
+            >{CREDITS.author.name}</a>, curated with
+            <a
+              href={CREDITS.curator.url}
+              {...ext}
+              data-umami-event="Footer Credit Clicked"
+              data-umami-event-person="curator"
+            >{CREDITS.curator.name}</a>
+            &amp; built with
+            <a
+              href={CREDITS.builder.url}
+              {...ext}
+              data-umami-event="Footer Credit Clicked"
+              data-umami-event-person="builder"
+            >{CREDITS.builder.name}</a>.
+          </p>
+          <p>
+            All bank logos are trademarks of their respective financial
+            institutions. This library does not claim ownership of any logo.
+            Logos are provided for designers' &amp; developers' convenience in
+            building fintech applications.
+          </p>
+        </div>
+      </div>
+
+      <p class="ft__license">
+        <BalanceIcon size={24} />
+        Free to use under MIT License
+      </p>
+    </div>
+
+    <div
+      class="ft__render"
+      data-src={BANK_MODEL_SRC}
+      data-pitch={BANK_ORBIT_PITCH}
+      data-distance={BANK_CAMERA_DISTANCE}
+    ></div>
+  </div>
+
+  <p class="ft__wordmark" aria-hidden="true">
+    Nigerian bank logos
+  </p>
+</footer>
+
+<script>
+  // three.js is heavy and the footer is at the bottom of the page,
+  // so only fetch it once the render area is close to the viewport.
+  const render = document.querySelector<HTMLElement>(".ft__render");
+  if (render) {
+    const io = new IntersectionObserver(
+      async (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        const reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        try {
+          const { mountBankModel } = await import("../lib/bank-model");
+          mountBankModel(render, {
+            src: render.dataset.src,
+            lockPitch: Number(render.dataset.pitch),
+            distance: Number(render.dataset.distance),
+            angle: 0,
+            zoom: false,
+            pan: false,
+            floorShadow: false,
+            autoRotate: !reduceMotion,
+            rotateSeconds: -180,
+            background: "transparent",
+          });
+        } catch {
+          // No WebGL (or three.js failed to load): drop the empty render area.
+          render.style.display = "none";
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(render);
+  }
+</script>
+
+<style>
+  .ft {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 40px 28px 28px;
+    background: #91d7fe;
+    color: #1f3141;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+  }
+
+  .ft__wrap {
+    display: flex;
+    gap: 32px;
+  }
+
+  .ft__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  .ft__top {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* Same drop-shadow crop as the header logo. */
+  .ft__logo {
+    --logo-h: 88px;
+    position: relative;
+    width: calc(var(--logo-h) * 0.88);
+    height: var(--logo-h);
+  }
+
+  .ft__logo :global(svg) {
+    position: absolute;
+    width: calc(var(--logo-h) * 1.594);
+    height: calc(var(--logo-h) * 1.719);
+    left: calc(var(--logo-h) * -0.366);
+    top: calc(var(--logo-h) * -0.225);
+  }
+
+  .ft__links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ft__links li {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ft__links a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ft__links a:hover {
+    text-decoration: underline;
+  }
+
+  .ft__about {
+    max-width: 430px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .ft__about a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .ft a:focus-visible {
+    outline: 2px solid #1f3141;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .ft__license {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Same footprint as the old 600×561 placeholder render. */
+  .ft__render {
+    display: block;
+    width: min(600px, 45%);
+    height: auto;
+    aspect-ratio: 600 / 561;
+    align-self: center;
+    flex-shrink: 0;
+    cursor: grab;
+    /* plus-darker is Safari-only today; other browsers keep multiply. */
+    /* mix-blend-mode: multiply;
+    mix-blend-mode: plus-darker; */
+  }
+
+  .ft__render:active {
+    cursor: grabbing;
+  }
+
+  .ft__render:focus-visible {
+    outline: 2px solid #1f3141;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Sized so the wordmark spans the container edge to edge: the text is
+     ~13.45em wide, so divide the content width (viewport minus padding) by that. */
+  .ft__wordmark {
+    font-family: "BBH Sans Hegarty", sans-serif;
+    font-feature-settings: normal;
+    font-size: calc((100vw - 56px) / 13.5);
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 767px) {
+    .ft {
+      padding: 28px 16px;
+    }
+
+    .ft__wrap {
+      flex-direction: column;
+    }
+
+    .ft__render {
+      width: 100%;
+    }
+
+    /* Two lines, "NIGERIAN / BANK LOGOS": 38px at a 375px viewport, scaling
+       with the content width. */
+    .ft__wordmark {
+      font-size: calc((100vw - 32px) / 9.03);
+      line-height: 1.3;
+      white-space: normal;
+    }
+  }
+</style>
